@@ -11,14 +11,15 @@ GET     /message                    controllers.AsyncController.message
 GET     /                               controllers.LoginController.init
 
 # Duscussion Board
-#GET     /discussionBoard                controllers.DiscussionBoardController.init
-#GET     /discussionBoard/:articleId     controllers.DiscussionBoardController.show(articleId:Int)
+GET     /discussion                     controllers.DiscussionController.init
+GET     /discussion/:articleId          controllers.DiscussionController.show(articleId:Int)
 
 # Personal Calendar Page
-#GET     /:userId/schedule               controllers.ScheduleController.init(userId:String)
-#GET     /:userId/schedule/:month        controllers.ScheduleController.show(userId:String, month:Int)
+GET     /:userId/schedule               controllers.ScheduleController.init(userId:String)
+GET     /:userId/schedule/:month        controllers.ScheduleController.show(userId:String, month:Int)
 
 # Personal Portal Page
+GET     /:userId/portal                 controllers.PortalController.init(userId:String)
 GET     /:userId                        controllers.PortalController.init(userId:String)
 
 # Map static resources from the /public folder to the /assets URL path
