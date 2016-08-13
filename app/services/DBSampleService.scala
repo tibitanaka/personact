@@ -14,11 +14,25 @@ import scala.concurrent.duration.Duration
 /**
   * Created by 典晃 on 2016/08/13.
   */
-class DBSampleService @Inject() (protected val dbConfigProvider: DatabaseConfigProvider) {
+trait DBSampleService {
+
+  /**
+    * パラメータのユーザIDからパスワードを取得する
+    * @param userId ユーザID
+    * @return パスワード
+    */
+  def dbSample(userId: String): Option[String]
+}
+
+class DBSampleServiceImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider) extends DBSampleService {
 
   val dbConfig = dbConfigProvider.get[JdbcProfile]
 
-  // パラメータのユーザIDからパスワードを取得する
+  /**
+    * パラメータのユーザIDからパスワードを取得する
+    * @param userId ユーザID
+    * @return パスワード
+    */
   def dbSample(userId: String): Option[String] = {
     val users = TableQuery[UserTable]
     val q = users.filter(_.userId === userId.bind).result.headOption

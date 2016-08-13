@@ -8,7 +8,7 @@ import services.DBSampleService
 /**
   * Created by 典晃 on 2016/08/12.
   */
-class DBSampleController @Inject() (myService: DBSampleService) extends Controller {
+class DBSampleController @Inject() (protected val myService: DBSampleService) extends Controller {
 
   def sample = Action {implicit request =>
 
