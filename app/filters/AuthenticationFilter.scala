@@ -18,7 +18,9 @@ object Authenticated extends AuthenticatedBuilder(
 
 object AuthenticationHelpers {
   val validCredentials = Set(
-    Credentials(User("michael"), Password("correct password"))
+     Credentials(User("michael"), Password("correct password"))
+    ,Credentials(User("tibitanaka"), Password("pass"))
+    ,Credentials(User("louvre2489"), Password("pass"))
   )
 
   def authHeaderValue(credentials: Credentials) =

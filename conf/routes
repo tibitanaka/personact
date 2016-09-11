@@ -9,6 +9,7 @@ GET     /message                    controllers.AsyncController.message
 
 # Dummy Root Controller
 GET     /                               controllers.LoginController.init
+POST    /login                          controllers.LoginController.login
 
 # Duscussion Board
 GET     /discussion                     controllers.DiscussionController.init
