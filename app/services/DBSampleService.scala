@@ -2,10 +2,10 @@ package services
 
 import javax.inject.Inject
 
+import models.UserTable
 import play.api.db.slick.DatabaseConfigProvider
 import slick.driver.JdbcProfile
 
-// H2なのが・・・１枚親クラスをかましておいてH2の記述が散らばらないようにするべきか？
 import slick.driver.H2Driver.api._
 
 import scala.concurrent.Await
@@ -18,6 +18,7 @@ trait DBSampleService {
 
   /**
     * パラメータのユーザIDからパスワードを取得する
+ *
     * @param userId ユーザID
     * @return パスワード
     */
@@ -30,6 +31,7 @@ class DBSampleServiceImpl @Inject() (protected val dbConfigProvider: DatabaseCon
 
   /**
     * パラメータのユーザIDからパスワードを取得する
+ *
     * @param userId ユーザID
     * @return パスワード
     */
@@ -40,13 +42,3 @@ class DBSampleServiceImpl @Inject() (protected val dbConfigProvider: DatabaseCon
     Await.result(dbConfig.db.run(q), Duration.Inf).map(_.password)
   }
 }
-
-// ここから下はmodelsディレクトリを作って移動させる
-case class User(userId: String, password: String)
-
-class UserTable(tag: Tag) extends Table[User](tag, "USER") {
-  def userId = column[String]("USERID", O.PrimaryKey)
-  def password = column[String]("PASSWORD")
-  def * = (userId, password) <> (User.tupled, User.unapply)
-}
-
