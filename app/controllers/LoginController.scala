@@ -2,7 +2,7 @@ package controllers
 
 import javax.inject._
 
-import filters.{AuthenticationHelpers, Credentials, Password, User}
+import filters.{LoginHelpers, Credentials, Password, User}
 import play.api.Logger
 import play.api.data._
 import play.api.data.Form
@@ -23,7 +23,7 @@ class LoginController @Inject() extends Controller {
    * a path of `/`.
    */
   def init = Action {
-    Ok(views.html.login())
+    Ok(views.html.login(""))
   }
 
   def login = Action { implicit request =>
@@ -36,12 +36,13 @@ class LoginController @Inject() extends Controller {
     val loginInfo = loginForm.bindFromRequest.get
     val userCredential = Credentials(User(loginInfo.userName), Password(loginInfo.password))
 
-    Logger.info(loginInfo.userName)
-    Logger.info(loginInfo.password)
-    Logger.info(AuthenticationHelpers.authHeaderValue(userCredential))
-
-    Redirect("/" + loginInfo.userName + "/portal").withHeaders(
-      "Authorization" -> AuthenticationHelpers.authHeaderValue(userCredential))
- }
+    if (LoginHelpers.validateCredential(userCredential))
+      // 認証情報が妥当であれば、ポータル画面に遷移
+      Redirect("/" + loginInfo.userName + "/portal").withSession(
+        LoginHelpers.registerCredentialToSession(request.session, userCredential))
+    else
+      // とりあえず元の画面に戻す
+      BadRequest(views.html.login("ユーザ名、またはパスワードが違います"))
+  }
 }
 case class LoginInfo(userName:String, password:String)

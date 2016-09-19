@@ -1,46 +1,73 @@
 package filters
 
-import AuthenticationHelpers._
-import java.util.Base64
+import java.security.MessageDigest
+import SessionHelpers._
 import play.api.mvc._
 import play.api.mvc.Results._
 import play.api.mvc.Security.AuthenticatedBuilder
+import scala.collection.mutable
 
+/**
+  * AuthenticationBuilderの拡張、認証済みでなければアクションを実行しない
+  */
 object Authenticated extends AuthenticatedBuilder(
-  _.headers.get("Authorization")
-    .flatMap(parseAuthHeader)
-    .flatMap(validateUser),
-  onUnauthorized = { _ ⇒
+  request => validateSessionCredential(request.session),
+  request => {
     Unauthorized(views.html.defaultpages.unauthorized())
-      .withHeaders("WWW-Authenticate" -> """Basic realm="Secured"""")
   }
 )
 
-object AuthenticationHelpers {
-  val validCredentials = Set(
-     Credentials(User("michael"), Password("correct password"))
-    ,Credentials(User("tibitanaka"), Password("pass"))
-    ,Credentials(User("louvre2489"), Password("pass"))
-  )
+object SessionHelpers {
+  // 既存セッションを管理する
+  val sessionKeys =  mutable.Map.empty[String, String]
 
-  def authHeaderValue(credentials: Credentials) =
-    "Basic " + Base64.getEncoder.encodeToString(s"${credentials.user.value}:${credentials.password.value}".getBytes)
-
-  def parseAuthHeader(authHeader: String): Option[Credentials] =
-    authHeader.split("""\s""") match {
-      case Array("Basic", userAndPass) ⇒
-        new String(Base64.getDecoder.decode(userAndPass), "UTF-8").split(":") match {
-          case Array(user, password) ⇒ Some(Credentials(User(user), Password(password)))
-          case _                     ⇒ None
-        }
-      case _ ⇒ None
-    }
-
-  def validateUser(c: Credentials): Option[User] =
-    if (validCredentials.contains(c))
-      Some(c.user)
-    else
+  // ブラウザセッション上の認証情報を照合する
+  def validateSessionCredential(session:Session): Option[User] = {
+    val userKey = session.get("UserKey")
+    val sessionKey = session.get("SessionKey")
+    if (userKey.nonEmpty && sessionKey.nonEmpty) {
+      val userId = play.api.libs.Crypto.decryptAES(userKey.get)
+      if (sessionKeys.contains(userId) && sessionKeys(userId) == sessionKey.get)
+        Some(User(userId))
+      else
+        None
+    } else {
       None
+    }
+  }
+}
+
+object LoginHelpers {
+  // テスト用のダミーパスワード
+  val validCredentials = Set(
+    Credentials(User("michael"), Password(toSha1Digest("correct password")))
+    ,Credentials(User("tibitanaka"), Password(toSha1Digest("pass")))
+    ,Credentials(User("louvre2489"), Password(toSha1Digest("pass")))
+  )
+   // SHA1でハッシュ化された値を返却する
+  def toSha1Digest(original: String): String = {
+    val md = MessageDigest.getInstance("SHA-1")
+    md.update(original.getBytes)
+    md.digest.foldLeft("") { (s, b) => s + "%02x".format(if (b < 0) b + 256 else b) }
+  }
+
+  // 認証情報を検証する
+  def validateCredential(c:Credentials):Boolean = {
+    val tmpC = Credentials(c.user, Password(toSha1Digest(c.password.value)))
+    if (validCredentials.contains(tmpC)) true else false
+  }
+
+  // サーバ、ブラウザにセッション情報を書き込む
+  def registerCredentialToSession(session:Session, credential: Credentials):Session = {
+    // サーバ側にセッションキーを登録
+    sessionKeys(credential.user.value)
+      = new scala.util.Random(new java.security.SecureRandom()).alphanumeric.take(64).mkString
+
+    // ブラウザ側にセッションにキーを登録
+    ((session
+      + ("UserKey" -> play.api.libs.Crypto.encryptAES(credential.user.value)))
+      + ("SessionKey" -> sessionKeys(credential.user.value)))
+  }
 }
 
 case class Credentials(user: User, password: Password)
